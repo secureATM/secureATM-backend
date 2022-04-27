@@ -59,15 +59,10 @@ display_model_headline = ""
 # default_pic_folder = os.path.join('DefaultImages')
 # app.config['DEFAULT_UPLOAD_FOLDER'] = default_pic_folder
 
-# client = MongoClient(
-#     'mongodb+srv://kavishka:kav1234@cluster0.ddfkm.mongodb.net/myFirstDatabase?retryWrites=true&w=majority')
-# db = client.get_database('test-db')
-# records = db.atm_user
-# newCol = db.detection_details
 
 try:
     client = MongoClient(
-        'mongodb+srv://kavishka:kav1234@cluster0.ddfkm.mongodb.net/myFirstDatabase?retryWrites=true&w=majority')
+        'mongodb+srv://<name>:<password>@cluster0.ddfkm.mongodb.net/myFirstDatabase?retryWrites=true&w=majority')
     db = client.get_database('test-db')
     records = db.atm_user
     newCol = db.detection_details
