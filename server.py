@@ -1,8 +1,8 @@
-import base64
-import io
-import json
-import os
-from PIL.Image import Image
+# import base64
+# import io
+# import json
+# import os
+# from PIL.Image import Image
 from flask import Flask, Response, send_file, request, jsonify
 from flask_cors import CORS, cross_origin
 import cv2
@@ -17,7 +17,7 @@ emotion_dict = {0: "Angry", 1: "Disgusted", 2: "Fearful", 3: "Happy", 4: "Neutra
 load_facial_expression_model = FacialExpression()
 
 Facerec = SimpleFacerec()
-Facerec.load_encoding_images("Saavi")
+Facerec.load_encoding_images("Unknown")
 
 app = Flask(__name__)
 CORS(app)
@@ -59,23 +59,18 @@ display_model_headline = ""
 # default_pic_folder = os.path.join('DefaultImages')
 # app.config['DEFAULT_UPLOAD_FOLDER'] = default_pic_folder
 
-
-try:
-    client = MongoClient(
-        'mongodb+srv://<name>:<password>@cluster0.ddfkm.mongodb.net/myFirstDatabase?retryWrites=true&w=majority')
-    db = client.get_database('test-db')
-    records = db.atm_user
-    newCol = db.detection_details
-
-except:
-    print("db not connected.")
+client = MongoClient(
+    'mongodb+srv://kavishka:kav1234@cluster0.ddfkm.mongodb.net/myFirstDatabase?retryWrites=true&w=majority')
+db = client.get_database('test-db')
+records = db.atm_user
+newCol = db.detection_details
 
 
 @app.route('/detectionOutput', methods=['POST'])
 def detectionOutput():
     global facial_rec_result, weapon_detect_result, facial_expression_result, count, detection_1, detection_2, \
-        detection_3, account_number, gun_detect_count, angry_count, disgusted_count, fearful_count, happy_count,\
-        neutral_count, sad_count, suprised_count, emotion_count,user_name,age,phone_number
+        detection_3, account_number, gun_detect_count, angry_count, disgusted_count, fearful_count, happy_count, \
+        neutral_count, sad_count, suprised_count, emotion_count, user_name, age, phone_number
 
     facial_rec_result = request.form["facialRecognition"]
     weapon_detect_result = request.form["weaponDetection"]
@@ -104,7 +99,8 @@ def detectionOutput():
     newDict = {"date": date, "account": account_num, "phoneNum": phone_num, "detect_1": facial_rec_result,
                "detect_2": weapon_detect_result,
                "detect_3": facial_expression_result}
-    newCol.insert_one(newDict)
+    if account_number != "":
+        newCol.insert_one(newDict)
 
     detection_1 = ""
     detection_2 = ""
@@ -178,8 +174,8 @@ def output():
             "model_headline": display_model_headline}
 
 
-
 def video():
+    global display_model_headline
     watch_cascade = cv2.CascadeClassifier('cascade_files/gun_cascade.xml')
     face_detector = cv2.CascadeClassifier('cascade_files/haarcascade_frontalface_default.xml')
 
@@ -192,12 +188,10 @@ def video():
         num_faces = face_detector.detectMultiScale(gray, 1.3, 5)
         rectangles = watch_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=10, minSize=(75, 75))
 
-        global count,display_model_headline
+        global count
         if 200 > count > 0:
             if len(rectangles) > 0:
-                global detection_2, gun_detect_count,display_model_headline
-                # detection_2 = "gun"
-                # print(detection_2)
+                global detection_2, gun_detect_count
                 if gun_detect_count > 120:
                     detection_2 = "weapon detect"
                 else:
@@ -208,7 +202,6 @@ def video():
                     cv2.putText(frame, "Gun" + " #{}".format(i + 1), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.55,
                                 (0, 0, 255), 2)
 
-                display_model_headline = "Weapon Checking....."
                 gun_detect_count += 1
         print(count)
 
@@ -248,8 +241,6 @@ def video():
                     emotion_count.insert(5, sad_count)
                     emotion_count.insert(6, suprised_count)
                     detection_3 = emotion_dict[emotion_count.index(max(emotion_count))]
-        display_model_headline = "Facial Expression checking..."
-
 
         global detection_1, detect_face_count, face_rec_count, user_name
         if count > 510:
@@ -270,7 +261,13 @@ def video():
                         detection_1 = "Unknown"
 
             face_rec_count += 1
-            display_model_headline = "Facial Recognition Checking......"
+
+        if count < 200:
+            display_model_headline = "Detecting weapons..."
+        elif count < 500:
+            display_model_headline = "Analyzing facial expression.."
+        elif count > 510:
+            display_model_headline = "Facial recognition..."
 
         (flag, encodedImage) = cv2.imencode('.jpg', frame)
         yield b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + bytearray(encodedImage) + b'\r\n'
